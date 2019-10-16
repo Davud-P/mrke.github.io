@@ -1,10 +1,10 @@
 ---
-title          : "MicroClimate Models"
-excerpt: Coming Soon
+title          : "Microclimate Models"
+excerpt: Computing the climate near the ground
 
 ---
-<h1>MicroClimate Models</h1>
+<h1>Microclimate Models</h1>
 
 
 <p>
-Coming Soon
+Microclimates represent the physical environments experienced by organisms.

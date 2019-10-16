@@ -12,7 +12,7 @@
 
 <meta name="author" content="Michael Kearney" />
 
-<meta name="date" content="2019-08-16" />
+<meta name="date" content="2019-10-08" />
 
 <title>Endotherm Model Tutorial I: component functions</title>
 
@@ -303,13 +303,13 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">Endotherm Model Tutorial I: component functions</h1>
 <h4 class="author">Michael Kearney</h4>
-<h4 class="date">2019-08-16</h4>
+<h4 class="date">2019-10-08</h4>
 
 
 
 <div id="overview" class="section level2">
 <h2>Overview</h2>
-<p>This document provides an overview of an R implementation of the NicheMapR endotherm model, via the sub-functions of ‘endoR’. This implementation modularises the original version such that many of the internal subroutines and functions can be called separately. The idea is that the user has more flexibility in setting the model up for the behavioural and physiological responses of a particular animal. There is also a tutorial for using ‘endoR’ itself is <a href="endotherm-model-tutorial.html">Endotherm Model Tutorial</a>.</p>
+<p>This document provides an overview of an R implementation of the NicheMapR endotherm model, via the sub-functions of ‘endoR’. This implementation modularises the original version such that many of the internal subroutines and functions can be called separately. The idea is that the user has more flexibility in setting the model up for the behavioural and physiological responses of a particular animal. There is also a tutorial for using ‘endoR’ itself <a href="endotherm-model-tutorial.html">Endotherm Model Tutorial</a>.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">library</span>(NicheMapR)</a>
 <a class="sourceLine" id="cb1-2" title="2"><span class="kw">library</span>(knitr)</a>
 <a class="sourceLine" id="cb1-3" title="3"><span class="kw">library</span>(plotrix)</a></code></pre></div>
@@ -323,9 +323,9 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb2-2" title="2">TA &lt;-<span class="st"> </span><span class="dv">20</span>  <span class="co"># air temperature, for calculation of conductivity of air (°C)</span></a>
 <a class="sourceLine" id="cb2-3" title="3"></a>
 <a class="sourceLine" id="cb2-4" title="4"><span class="co"># shape input</span></a>
-<a class="sourceLine" id="cb2-5" title="5">GMULTMAX &lt;-<span class="st"> </span><span class="fl">2.7</span>  <span class="co"># max possible ratio between long and short axis (-)</span></a>
-<a class="sourceLine" id="cb2-6" title="6">GMREF &lt;-<span class="st"> </span><span class="fl">2.7</span>  <span class="co"># initial ratio between long and short axis (-)</span></a>
-<a class="sourceLine" id="cb2-7" title="7">GMULT &lt;-<span class="st"> </span><span class="fl">2.7</span>  <span class="co"># current ratio between long and short axis (-)</span></a>
+<a class="sourceLine" id="cb2-5" title="5">SHAPE_B_MAX &lt;-<span class="st"> </span><span class="fl">2.7</span>  <span class="co"># max possible ratio between long and short axis (-)</span></a>
+<a class="sourceLine" id="cb2-6" title="6">SHAPE_B_REF &lt;-<span class="st"> </span><span class="fl">2.7</span>  <span class="co"># initial ratio between long and short axis (-)</span></a>
+<a class="sourceLine" id="cb2-7" title="7">SHAPE_B &lt;-<span class="st"> </span><span class="fl">2.7</span>  <span class="co"># current ratio between long and short axis (-)</span></a>
 <a class="sourceLine" id="cb2-8" title="8">MAXPTVEN &lt;-<span class="st"> </span><span class="fl">0.3</span>  <span class="co"># maxium fraction of surface area that is ventral (fractional, 0-1)</span></a>
 <a class="sourceLine" id="cb2-9" title="9"></a>
 <a class="sourceLine" id="cb2-10" title="10"><span class="co"># fur properties</span></a>
@@ -335,35 +335,38 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb2-14" title="14">LHAIRV &lt;-<span class="st"> </span><span class="fl">0.0239</span>  <span class="co"># hair length, ventral (m)  </span></a>
 <a class="sourceLine" id="cb2-15" title="15">ZFURD &lt;-<span class="st"> </span><span class="fl">0.009</span>  <span class="co"># fur depth, dorsal (m)</span></a>
 <a class="sourceLine" id="cb2-16" title="16">ZFURV &lt;-<span class="st"> </span><span class="fl">0.009</span>  <span class="co"># fur depth, ventral (m)</span></a>
-<a class="sourceLine" id="cb2-17" title="17">RHOD &lt;-<span class="st"> </span><span class="dv">39680000</span>  <span class="co"># hair density, dorsal (1/m2) </span></a>
-<a class="sourceLine" id="cb2-18" title="18">RHOV &lt;-<span class="st"> </span><span class="dv">27810000</span>  <span class="co"># hair density, ventral (1/m2)</span></a>
-<a class="sourceLine" id="cb2-19" title="19">REFLD &lt;-<span class="st"> </span><span class="fl">0.301</span>  <span class="co"># fur reflectivity dorsal (fractional, 0-1) </span></a>
-<a class="sourceLine" id="cb2-20" title="20">REFLV &lt;-<span class="st"> </span><span class="fl">0.301</span>  <span class="co"># fur reflectivity ventral (fractional, 0-1)</span></a>
-<a class="sourceLine" id="cb2-21" title="21"></a>
-<a class="sourceLine" id="cb2-22" title="22"><span class="co"># call the subroutine</span></a>
-<a class="sourceLine" id="cb2-23" title="23">IRPROP.out &lt;-<span class="st"> </span><span class="kw">IRPROP</span>(TA, GMULTMAX, GMREF, GMULT, DHAIRD, DHAIRV, </a>
-<a class="sourceLine" id="cb2-24" title="24">    LHAIRD, LHAIRV, ZFURD, ZFURV, RHOD, RHOV, REFLD, REFLV, MAXPTVEN)</a>
-<a class="sourceLine" id="cb2-25" title="25"></a>
-<a class="sourceLine" id="cb2-26" title="26"><span class="co"># output</span></a>
-<a class="sourceLine" id="cb2-27" title="27">E4B1 &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">1</span>]  <span class="co"># exponential integral, E4, of optical thickness, B1 (m), i.e. E4(B1)</span></a>
-<a class="sourceLine" id="cb2-28" title="28">KEFARA &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">2</span><span class="op">:</span><span class="dv">4</span>]  <span class="co"># effective thermal conductivity of fur array, mean, dorsal, ventral (W/mK)</span></a>
-<a class="sourceLine" id="cb2-29" title="29">BETARA &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">5</span><span class="op">:</span><span class="dv">7</span>]  <span class="co"># term involved in computing optical thickess</span></a>
-<a class="sourceLine" id="cb2-30" title="30">B1ARA &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">8</span><span class="op">:</span><span class="dv">10</span>]  <span class="co"># optical thickness array, mean, dorsal, ventral (-)</span></a>
-<a class="sourceLine" id="cb2-31" title="31">DHAR &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">11</span><span class="op">:</span><span class="dv">13</span>]  <span class="co"># fur diameter array, mean, dorsal, ventral (m)</span></a>
-<a class="sourceLine" id="cb2-32" title="32">LHAR &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">14</span><span class="op">:</span><span class="dv">16</span>]  <span class="co"># fur length array, mean, dorsal, ventral (m)</span></a>
-<a class="sourceLine" id="cb2-33" title="33">RHOAR &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">17</span><span class="op">:</span><span class="dv">19</span>]  <span class="co"># fur density array, mean, dorsal, ventral (fibers/m2)  </span></a>
-<a class="sourceLine" id="cb2-34" title="34">ZZFUR &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">20</span><span class="op">:</span><span class="dv">22</span>]  <span class="co"># fur depth array, mean, dorsal, ventral (m)  </span></a>
-<a class="sourceLine" id="cb2-35" title="35">REFLFR &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">23</span><span class="op">:</span><span class="dv">25</span>]  <span class="co"># fur reflectivity array, mean, dorsal, ventral (fractional, 0-1)</span></a>
-<a class="sourceLine" id="cb2-36" title="36">FURTST &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">26</span>]  <span class="co"># test of presence of fur (length x diamater x density x depth) (-)</span></a>
-<a class="sourceLine" id="cb2-37" title="37"></a>
-<a class="sourceLine" id="cb2-38" title="38">IRPROP.lab &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;E4B1&quot;</span>, <span class="st">&quot;KEFARA mean&quot;</span>, <span class="st">&quot;KEFARA dorsal&quot;</span>, <span class="st">&quot;KEFARA ventral&quot;</span>, </a>
-<a class="sourceLine" id="cb2-39" title="39">    <span class="st">&quot;BETARA mean&quot;</span>, <span class="st">&quot;BETARA dorsal&quot;</span>, <span class="st">&quot;BETARA ventral&quot;</span>, <span class="st">&quot;B1ARA mean&quot;</span>, </a>
-<a class="sourceLine" id="cb2-40" title="40">    <span class="st">&quot;B1ARA dorsal&quot;</span>, <span class="st">&quot;B1ARA ventral&quot;</span>, <span class="st">&quot;DHAR mean&quot;</span>, <span class="st">&quot;DHAR dorsal&quot;</span>, </a>
-<a class="sourceLine" id="cb2-41" title="41">    <span class="st">&quot;DHAR ventral&quot;</span>, <span class="st">&quot;LHAR mean&quot;</span>, <span class="st">&quot;LHAR dorsal&quot;</span>, <span class="st">&quot;LHAR ventral&quot;</span>, </a>
-<a class="sourceLine" id="cb2-42" title="42">    <span class="st">&quot;RHOAR mean&quot;</span>, <span class="st">&quot;RHOAR dorsal&quot;</span>, <span class="st">&quot;RHOAR ventral&quot;</span>, <span class="st">&quot;ZZFUR mean&quot;</span>, </a>
-<a class="sourceLine" id="cb2-43" title="43">    <span class="st">&quot;ZZFUR dorsal&quot;</span>, <span class="st">&quot;ZZFUR ventral&quot;</span>, <span class="st">&quot;REFLFR mean&quot;</span>, <span class="st">&quot;REFLFR dorsal&quot;</span>, </a>
-<a class="sourceLine" id="cb2-44" title="44">    <span class="st">&quot;REFLFR ventral&quot;</span>, <span class="st">&quot;FURTST&quot;</span>)</a>
-<a class="sourceLine" id="cb2-45" title="45"><span class="kw">kable</span>(<span class="kw">cbind</span>(IRPROP.lab, IRPROP.out[<span class="dv">1</span><span class="op">:</span><span class="dv">26</span>]))</a></code></pre></div>
+<a class="sourceLine" id="cb2-17" title="17">ZFURCOMP &lt;-<span class="st"> </span>ZFURV  <span class="co"># depth of compressed fur (for conduction) (m)</span></a>
+<a class="sourceLine" id="cb2-18" title="18">RHOD &lt;-<span class="st"> </span><span class="dv">39680000</span>  <span class="co"># hair density, dorsal (1/m2) </span></a>
+<a class="sourceLine" id="cb2-19" title="19">RHOV &lt;-<span class="st"> </span><span class="dv">27810000</span>  <span class="co"># hair density, ventral (1/m2)</span></a>
+<a class="sourceLine" id="cb2-20" title="20">REFLD &lt;-<span class="st"> </span><span class="fl">0.301</span>  <span class="co"># fur reflectivity dorsal (fractional, 0-1) </span></a>
+<a class="sourceLine" id="cb2-21" title="21">REFLV &lt;-<span class="st"> </span><span class="fl">0.301</span>  <span class="co"># fur reflectivity ventral (fractional, 0-1)</span></a>
+<a class="sourceLine" id="cb2-22" title="22"></a>
+<a class="sourceLine" id="cb2-23" title="23"><span class="co"># call the subroutine</span></a>
+<a class="sourceLine" id="cb2-24" title="24">IRPROP.out &lt;-<span class="st"> </span><span class="kw">IRPROP</span>(TA, SHAPE_B_MAX, SHAPE_B_REF, SHAPE_B, DHAIRD, </a>
+<a class="sourceLine" id="cb2-25" title="25">    DHAIRV, LHAIRD, LHAIRV, ZFURD, ZFURV, RHOD, RHOV, REFLD, </a>
+<a class="sourceLine" id="cb2-26" title="26">    REFLV, MAXPTVEN, ZFURCOMP)</a>
+<a class="sourceLine" id="cb2-27" title="27"></a>
+<a class="sourceLine" id="cb2-28" title="28"><span class="co"># output</span></a>
+<a class="sourceLine" id="cb2-29" title="29">E4B1 &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">1</span>]  <span class="co"># exponential integral, E4, of optical thickness, B1 (m), i.e. E4(B1)</span></a>
+<a class="sourceLine" id="cb2-30" title="30">KEFARA &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">2</span><span class="op">:</span><span class="dv">4</span>]  <span class="co"># effective thermal conductivity of fur array, mean, dorsal, ventral (W/mK)</span></a>
+<a class="sourceLine" id="cb2-31" title="31">BETARA &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">5</span><span class="op">:</span><span class="dv">7</span>]  <span class="co"># term involved in computing optical thickess</span></a>
+<a class="sourceLine" id="cb2-32" title="32">B1ARA &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">8</span><span class="op">:</span><span class="dv">10</span>]  <span class="co"># optical thickness array, mean, dorsal, ventral (-)</span></a>
+<a class="sourceLine" id="cb2-33" title="33">DHAR &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">11</span><span class="op">:</span><span class="dv">13</span>]  <span class="co"># fur diameter array, mean, dorsal, ventral (m)</span></a>
+<a class="sourceLine" id="cb2-34" title="34">LHAR &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">14</span><span class="op">:</span><span class="dv">16</span>]  <span class="co"># fur length array, mean, dorsal, ventral (m)</span></a>
+<a class="sourceLine" id="cb2-35" title="35">RHOAR &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">17</span><span class="op">:</span><span class="dv">19</span>]  <span class="co"># fur density array, mean, dorsal, ventral (fibers/m2)  </span></a>
+<a class="sourceLine" id="cb2-36" title="36">ZZFUR &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">20</span><span class="op">:</span><span class="dv">22</span>]  <span class="co"># fur depth array, mean, dorsal, ventral (m)  </span></a>
+<a class="sourceLine" id="cb2-37" title="37">REFLFR &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">23</span><span class="op">:</span><span class="dv">25</span>]  <span class="co"># fur reflectivity array, mean, dorsal, ventral (fractional, 0-1)</span></a>
+<a class="sourceLine" id="cb2-38" title="38">FURTST &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">26</span>]  <span class="co"># test of presence of fur (length x diamater x density x depth) (-)</span></a>
+<a class="sourceLine" id="cb2-39" title="39">KFURCMPRS &lt;-<span class="st"> </span>IRPROP.out[<span class="dv">27</span>]  <span class="co"># effictive thermal conductivity of compressed ventral fur (W/mK)</span></a>
+<a class="sourceLine" id="cb2-40" title="40"></a>
+<a class="sourceLine" id="cb2-41" title="41">IRPROP.lab &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;E4B1&quot;</span>, <span class="st">&quot;KEFARA mean&quot;</span>, <span class="st">&quot;KEFARA dorsal&quot;</span>, <span class="st">&quot;KEFARA ventral&quot;</span>, </a>
+<a class="sourceLine" id="cb2-42" title="42">    <span class="st">&quot;BETARA mean&quot;</span>, <span class="st">&quot;BETARA dorsal&quot;</span>, <span class="st">&quot;BETARA ventral&quot;</span>, <span class="st">&quot;B1ARA mean&quot;</span>, </a>
+<a class="sourceLine" id="cb2-43" title="43">    <span class="st">&quot;B1ARA dorsal&quot;</span>, <span class="st">&quot;B1ARA ventral&quot;</span>, <span class="st">&quot;DHAR mean&quot;</span>, <span class="st">&quot;DHAR dorsal&quot;</span>, </a>
+<a class="sourceLine" id="cb2-44" title="44">    <span class="st">&quot;DHAR ventral&quot;</span>, <span class="st">&quot;LHAR mean&quot;</span>, <span class="st">&quot;LHAR dorsal&quot;</span>, <span class="st">&quot;LHAR ventral&quot;</span>, </a>
+<a class="sourceLine" id="cb2-45" title="45">    <span class="st">&quot;RHOAR mean&quot;</span>, <span class="st">&quot;RHOAR dorsal&quot;</span>, <span class="st">&quot;RHOAR ventral&quot;</span>, <span class="st">&quot;ZZFUR mean&quot;</span>, </a>
+<a class="sourceLine" id="cb2-46" title="46">    <span class="st">&quot;ZZFUR dorsal&quot;</span>, <span class="st">&quot;ZZFUR ventral&quot;</span>, <span class="st">&quot;REFLFR mean&quot;</span>, <span class="st">&quot;REFLFR dorsal&quot;</span>, </a>
+<a class="sourceLine" id="cb2-47" title="47">    <span class="st">&quot;REFLFR ventral&quot;</span>, <span class="st">&quot;FURTST&quot;</span>, <span class="st">&quot;KFURCMPRS&quot;</span>)</a>
+<a class="sourceLine" id="cb2-48" title="48"><span class="kw">kable</span>(<span class="kw">cbind</span>(IRPROP.lab, IRPROP.out[<span class="dv">1</span><span class="op">:</span><span class="dv">27</span>]))</a></code></pre></div>
 <table>
 <thead>
 <tr class="header">
@@ -374,7 +377,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <tbody>
 <tr class="odd">
 <td align="left">E4B1</td>
-<td>0.0018186895902556</td>
+<td>0.000802058267814305</td>
 </tr>
 <tr class="even">
 <td align="left">KEFARA mean</td>
@@ -386,7 +389,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </tr>
 <tr class="even">
 <td align="left">KEFARA ventral</td>
-<td>0.0284262553250562</td>
+<td>0.0289267341979939</td>
 </tr>
 <tr class="odd">
 <td align="left">BETARA mean</td>
@@ -398,7 +401,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </tr>
 <tr class="odd">
 <td align="left">BETARA ventral</td>
-<td>472.501211497244</td>
+<td>553.171321248733</td>
 </tr>
 <tr class="even">
 <td align="left">B1ARA mean</td>
@@ -410,7 +413,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </tr>
 <tr class="even">
 <td align="left">B1ARA ventral</td>
-<td>4.2525109034752</td>
+<td>4.9785418912386</td>
 </tr>
 <tr class="odd">
 <td align="left">DHAR mean</td>
@@ -446,7 +449,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </tr>
 <tr class="odd">
 <td align="left">RHOAR ventral</td>
-<td>27810000</td>
+<td>32558000</td>
 </tr>
 <tr class="even">
 <td align="left">ZZFUR mean</td>
@@ -476,15 +479,19 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <td align="left">FURTST</td>
 <td>0.25605504</td>
 </tr>
+<tr class="odd">
+<td align="left">KFURCMPRS</td>
+<td>0.0289267341979939</td>
+</tr>
 </tbody>
 </table>
 <p>Example analysis of fur diameter on effective thermal conductivity of fur.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1">DHAIRs &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="dv">0</span>, <span class="dv">150</span>, <span class="dv">2</span>)  <span class="co"># hair diameters (micrometers)</span></a>
 <a class="sourceLine" id="cb3-2" title="2">KEFARAs &lt;-<span class="st"> </span><span class="ot">NULL</span></a>
 <a class="sourceLine" id="cb3-3" title="3"><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">length</span>(DHAIRs)) {</a>
-<a class="sourceLine" id="cb3-4" title="4">    KEFARAs[i] &lt;-<span class="st"> </span><span class="kw">IRPROP</span>(TA, GMULTMAX, GMREF, GMULT, DHAIRs[i] <span class="op">*</span><span class="st"> </span></a>
-<a class="sourceLine" id="cb3-5" title="5"><span class="st">        </span><span class="fl">1e-06</span>, DHAIRs[i] <span class="op">*</span><span class="st"> </span><span class="fl">1e-06</span>, LHAIRD, LHAIRV, ZFURD, ZFURV, </a>
-<a class="sourceLine" id="cb3-6" title="6">        RHOD, RHOV, REFLD, REFLV, MAXPTVEN)[<span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb3-4" title="4">    KEFARAs[i] &lt;-<span class="st"> </span><span class="kw">IRPROP</span>(TA, SHAPE_B_MAX, SHAPE_B_REF, SHAPE_B, </a>
+<a class="sourceLine" id="cb3-5" title="5">        DHAIRs[i] <span class="op">*</span><span class="st"> </span><span class="fl">1e-06</span>, DHAIRs[i] <span class="op">*</span><span class="st"> </span><span class="fl">1e-06</span>, LHAIRD, LHAIRV, </a>
+<a class="sourceLine" id="cb3-6" title="6">        ZFURD, ZFURV, RHOD, RHOV, REFLD, REFLV, MAXPTVEN, ZFURCOMP)[<span class="dv">2</span>]</a>
 <a class="sourceLine" id="cb3-7" title="7">}</a>
 <a class="sourceLine" id="cb3-8" title="8"><span class="kw">plot</span>(KEFARAs <span class="op">~</span><span class="st"> </span>DHAIRs, <span class="dt">type =</span> <span class="st">&quot;p&quot;</span>, <span class="dt">pch =</span> <span class="dv">16</span>, <span class="dt">ylab =</span> <span class="st">&quot;effective fur conductivity, W K-1 m-1&quot;</span>, </a>
 <a class="sourceLine" id="cb3-9" title="9">    <span class="dt">xlab =</span> <span class="st">&quot;hair diameter, um&quot;</span>)</a></code></pre></div>
@@ -493,9 +500,9 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1">RHOs &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="dv">0</span>, <span class="dv">50000</span>, <span class="dv">500</span>)  <span class="co"># hair densities (1/cm2)</span></a>
 <a class="sourceLine" id="cb4-2" title="2">KEFARAs &lt;-<span class="st"> </span><span class="ot">NULL</span></a>
 <a class="sourceLine" id="cb4-3" title="3"><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">length</span>(RHOs)) {</a>
-<a class="sourceLine" id="cb4-4" title="4">    KEFARAs[i] &lt;-<span class="st"> </span><span class="kw">IRPROP</span>(TA, GMULTMAX, GMREF, GMULT, DHAIRD, </a>
-<a class="sourceLine" id="cb4-5" title="5">        DHAIRV, LHAIRD, LHAIRV, ZFURD, ZFURV, RHOs[i] <span class="op">*</span><span class="st"> </span><span class="dv">10000</span>, </a>
-<a class="sourceLine" id="cb4-6" title="6">        RHOs[i] <span class="op">*</span><span class="st"> </span><span class="dv">10000</span>, REFLD, REFLV, MAXPTVEN)[<span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb4-4" title="4">    KEFARAs[i] &lt;-<span class="st"> </span><span class="kw">IRPROP</span>(TA, SHAPE_B_MAX, SHAPE_B_REF, SHAPE_B, </a>
+<a class="sourceLine" id="cb4-5" title="5">        DHAIRD, DHAIRV, LHAIRD, LHAIRV, ZFURD, ZFURV, RHOs[i] <span class="op">*</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb4-6" title="6"><span class="st">            </span><span class="dv">10000</span>, RHOs[i] <span class="op">*</span><span class="st"> </span><span class="dv">10000</span>, REFLD, REFLV, MAXPTVEN, ZFURCOMP)[<span class="dv">2</span>]</a>
 <a class="sourceLine" id="cb4-7" title="7">}</a>
 <a class="sourceLine" id="cb4-8" title="8"><span class="kw">plot</span>(KEFARAs <span class="op">~</span><span class="st"> </span>RHOs, <span class="dt">type =</span> <span class="st">&quot;p&quot;</span>, <span class="dt">pch =</span> <span class="dv">16</span>, <span class="dt">ylab =</span> <span class="st">&quot;effective fur conductivity, W K-1 m-1&quot;</span>, </a>
 <a class="sourceLine" id="cb4-9" title="9">    <span class="dt">xlab =</span> <span class="st">&quot;hair density, 1/cm2&quot;</span>)</a></code></pre></div>
@@ -504,9 +511,9 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1">ZFURs &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="dv">0</span>, <span class="dv">50</span>, <span class="dv">1</span>)  <span class="co"># hair depths (mm)</span></a>
 <a class="sourceLine" id="cb5-2" title="2">KEFARAs &lt;-<span class="st"> </span><span class="ot">NULL</span></a>
 <a class="sourceLine" id="cb5-3" title="3"><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">length</span>(ZFURs)) {</a>
-<a class="sourceLine" id="cb5-4" title="4">    KEFARAs[i] &lt;-<span class="st"> </span><span class="kw">IRPROP</span>(TA, GMULTMAX, GMREF, GMULT, DHAIRD, </a>
-<a class="sourceLine" id="cb5-5" title="5">        DHAIRV, LHAIRD, LHAIRV, ZFURs[i] <span class="op">*</span><span class="st"> </span><span class="fl">0.001</span>, ZFURs[i] <span class="op">*</span><span class="st"> </span></a>
-<a class="sourceLine" id="cb5-6" title="6"><span class="st">            </span><span class="fl">0.001</span>, RHOD, RHOV, REFLD, REFLV, MAXPTVEN)[<span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb5-4" title="4">    KEFARAs[i] &lt;-<span class="st"> </span><span class="kw">IRPROP</span>(TA, SHAPE_B_MAX, SHAPE_B_REF, SHAPE_B, </a>
+<a class="sourceLine" id="cb5-5" title="5">        DHAIRD, DHAIRV, LHAIRD, LHAIRV, ZFURs[i] <span class="op">*</span><span class="st"> </span><span class="fl">0.001</span>, ZFURs[i] <span class="op">*</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb5-6" title="6"><span class="st">            </span><span class="fl">0.001</span>, RHOD, RHOV, REFLD, REFLV, MAXPTVEN, ZFURCOMP)[<span class="dv">2</span>]</a>
 <a class="sourceLine" id="cb5-7" title="7">}</a>
 <a class="sourceLine" id="cb5-8" title="8"><span class="kw">plot</span>(KEFARAs <span class="op">~</span><span class="st"> </span>ZFURs, <span class="dt">type =</span> <span class="st">&quot;p&quot;</span>, <span class="dt">pch =</span> <span class="dv">16</span>, <span class="dt">ylab =</span> <span class="st">&quot;effective fur conductivity, W K-1 m-1&quot;</span>, </a>
 <a class="sourceLine" id="cb5-9" title="9">    <span class="dt">xlab =</span> <span class="st">&quot;fur depth, mm&quot;</span>)</a></code></pre></div>
@@ -520,71 +527,70 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb6-3" title="3">ANDENS &lt;-<span class="st"> </span><span class="dv">1000</span>  <span class="co"># kg/m3</span></a>
 <a class="sourceLine" id="cb6-4" title="4">SUBQFAT &lt;-<span class="st"> </span><span class="dv">1</span>  <span class="co"># is subcutaneous fat present? (0 is no, 1 is yes)</span></a>
 <a class="sourceLine" id="cb6-5" title="5">FATPCT &lt;-<span class="st"> </span><span class="dv">20</span>  <span class="co"># % body fat</span></a>
-<a class="sourceLine" id="cb6-6" title="6">NGEOM &lt;-<span class="st"> </span><span class="dv">4</span>  <span class="co"># shape, 1 is cylinder, 2 is sphere, 3 is plate, 4 is ellipsoid</span></a>
-<a class="sourceLine" id="cb6-7" title="7">GMREF &lt;-<span class="st"> </span><span class="fl">2.7</span>  <span class="co"># initial ratio between long and short axis (-)</span></a>
-<a class="sourceLine" id="cb6-8" title="8">GMULT &lt;-<span class="st"> </span><span class="fl">2.7</span>  <span class="co"># current ratio between long and short axis (-)</span></a>
-<a class="sourceLine" id="cb6-9" title="9">DHARA &lt;-<span class="st"> </span>DHAR[<span class="dv">1</span>]  <span class="co"># fur diameter, mean (m) (from IRPROP)</span></a>
-<a class="sourceLine" id="cb6-10" title="10">RHOARA &lt;-<span class="st"> </span>RHOAR[<span class="dv">1</span>]  <span class="co"># hair density, mean (1/m2) (from IRPROP)</span></a>
-<a class="sourceLine" id="cb6-11" title="11">ZFUR &lt;-<span class="st"> </span>ZZFUR[<span class="dv">1</span>]  <span class="co"># fur depth, mean (m) (from IRPROP)</span></a>
-<a class="sourceLine" id="cb6-12" title="12">PTCOND &lt;-<span class="st"> </span><span class="fl">0.1</span>  <span class="co"># fraction of body in contact with substrate (fractional, 0-1)</span></a>
-<a class="sourceLine" id="cb6-13" title="13">BIRD &lt;-<span class="st"> </span><span class="dv">0</span>  <span class="co"># if 1, uses bird skin surface area scaling from Walsberg, G. E., and J. E. King. 1978. The Relationship of the External Surface Area of Birds to Skin Surface Area and Body Mass. Journal of Experimental Biology 76:185–189.</span></a>
-<a class="sourceLine" id="cb6-14" title="14">MAMMAL &lt;-<span class="st"> </span><span class="dv">0</span>  <span class="co"># if 1, uses mammal surface area scaling from Stahl W. R. (1967) Scaling of respiratory variables in mammals. Journal of Applied Physiology 22 , 453–460.</span></a>
-<a class="sourceLine" id="cb6-15" title="15">ORIENT &lt;-<span class="st"> </span><span class="dv">0</span>  <span class="co"># if 1, largest surface area normal to sun&#39;s ray&#39;s, if 2, largest surface parallel to sun&#39;s rays, if 0, average of normal/parallel posture, </span></a>
-<a class="sourceLine" id="cb6-16" title="16"></a>
-<a class="sourceLine" id="cb6-17" title="17"><span class="co"># call the subroutine</span></a>
-<a class="sourceLine" id="cb6-18" title="18">GEOM.out &lt;-<span class="st"> </span><span class="kw">GEOM</span>(AMASS, ANDENS, FATPCT, NGEOM, ZFUR, SUBQFAT, </a>
-<a class="sourceLine" id="cb6-19" title="19">    GMULT, GMREF, DHARA, RHOARA, PTCOND, BIRD, MAMMAL, ORIENT)</a>
-<a class="sourceLine" id="cb6-20" title="20"></a>
-<a class="sourceLine" id="cb6-21" title="21"><span class="co"># output</span></a>
-<a class="sourceLine" id="cb6-22" title="22">R &lt;-<span class="st"> </span>GEOM.out[<span class="dv">1</span>]  <span class="co"># radius as determined assumming the volume as a sphere, m</span></a>
-<a class="sourceLine" id="cb6-23" title="23">VOL &lt;-<span class="st"> </span>GEOM.out[<span class="dv">2</span>]  <span class="co"># volume, m3</span></a>
-<a class="sourceLine" id="cb6-24" title="24">D &lt;-<span class="st"> </span>GEOM.out[<span class="dv">3</span>]  <span class="co"># diameter as determined assumming the volume as a sphere, m</span></a>
-<a class="sourceLine" id="cb6-25" title="25">MASFAT &lt;-<span class="st"> </span>GEOM.out[<span class="dv">4</span>]  <span class="co"># mass body fat, kg</span></a>
-<a class="sourceLine" id="cb6-26" title="26">VOLFAT &lt;-<span class="st"> </span>GEOM.out[<span class="dv">5</span>]  <span class="co"># volume body fat, m3</span></a>
-<a class="sourceLine" id="cb6-27" title="27">ALENTH &lt;-<span class="st"> </span>GEOM.out[<span class="dv">6</span>]  <span class="co"># length, m</span></a>
-<a class="sourceLine" id="cb6-28" title="28">AWIDTH &lt;-<span class="st"> </span>GEOM.out[<span class="dv">7</span>]  <span class="co"># width, m</span></a>
-<a class="sourceLine" id="cb6-29" title="29">AHEIT &lt;-<span class="st"> </span>GEOM.out[<span class="dv">8</span>]  <span class="co"># height, m</span></a>
-<a class="sourceLine" id="cb6-30" title="30">ATOT &lt;-<span class="st"> </span>GEOM.out[<span class="dv">9</span>]  <span class="co"># total area, m2</span></a>
-<a class="sourceLine" id="cb6-31" title="31">ASIL &lt;-<span class="st"> </span>GEOM.out[<span class="dv">10</span>]  <span class="co"># silhouette area, m2</span></a>
-<a class="sourceLine" id="cb6-32" title="32">ASILN &lt;-<span class="st"> </span>GEOM.out[<span class="dv">11</span>]  <span class="co"># silhouette area normal to sun, m2</span></a>
-<a class="sourceLine" id="cb6-33" title="33">ASILP &lt;-<span class="st"> </span>GEOM.out[<span class="dv">12</span>]  <span class="co"># silhouette area parallel to sun, m2</span></a>
-<a class="sourceLine" id="cb6-34" title="34">AL &lt;-<span class="st"> </span>GEOM.out[<span class="dv">13</span>]  <span class="co"># effective length for convection, m</span></a>
-<a class="sourceLine" id="cb6-35" title="35">GMASS &lt;-<span class="st"> </span>GEOM.out[<span class="dv">14</span>]  <span class="co"># mass, g</span></a>
-<a class="sourceLine" id="cb6-36" title="36">AREASKIN &lt;-<span class="st"> </span>GEOM.out[<span class="dv">15</span>]  <span class="co"># area of skin, m2</span></a>
-<a class="sourceLine" id="cb6-37" title="37">AREA &lt;-<span class="st"> </span>GEOM.out[<span class="dv">16</span>]  <span class="co"># total area at fur/feathers-air interface, m2</span></a>
-<a class="sourceLine" id="cb6-38" title="38">FLSHVL &lt;-<span class="st"> </span>GEOM.out[<span class="dv">17</span>]  <span class="co"># flesh volume, m3</span></a>
-<a class="sourceLine" id="cb6-39" title="39">FATTHK &lt;-<span class="st"> </span>GEOM.out[<span class="dv">18</span>]  <span class="co"># fat layer thickness, m</span></a>
-<a class="sourceLine" id="cb6-40" title="40">ASEMAJ &lt;-<span class="st"> </span>GEOM.out[<span class="dv">19</span>]  <span class="co"># semimajor axis length, m</span></a>
-<a class="sourceLine" id="cb6-41" title="41">BSEMIN &lt;-<span class="st"> </span>GEOM.out[<span class="dv">20</span>]  <span class="co"># b semiminor axis length, m</span></a>
-<a class="sourceLine" id="cb6-42" title="42">CSEMIN &lt;-<span class="st"> </span>GEOM.out[<span class="dv">21</span>]  <span class="co"># c semiminor axis length, m (currently only prolate spheroid)</span></a>
-<a class="sourceLine" id="cb6-43" title="43">CONVSK &lt;-<span class="st"> </span>GEOM.out[<span class="dv">22</span>]  <span class="co"># area of skin for evaporation (total skin area - hair area), m2</span></a>
-<a class="sourceLine" id="cb6-44" title="44">CONVAR &lt;-<span class="st"> </span>GEOM.out[<span class="dv">23</span>]  <span class="co"># area for convection (total area minus ventral area, as determined by PTCOND), m2</span></a>
-<a class="sourceLine" id="cb6-45" title="45">R1 &lt;-<span class="st"> </span>GEOM.out[<span class="dv">24</span>]  <span class="co"># shape-specific core-skin radius in shortest dimension, m</span></a>
-<a class="sourceLine" id="cb6-46" title="46">R2 &lt;-<span class="st"> </span>GEOM.out[<span class="dv">25</span>]  <span class="co"># shape-specific core-fur radius in shortest dimension, m</span></a>
-<a class="sourceLine" id="cb6-47" title="47"></a>
-<a class="sourceLine" id="cb6-48" title="48"><span class="co"># nest properties</span></a>
-<a class="sourceLine" id="cb6-49" title="49">NESTYP &lt;-<span class="st"> </span><span class="dv">3</span>  <span class="co"># for nest calculations - 0 = none, 1 = flat, 2 = cup, 3 = cylinder, 4 = half cylinder, 5 = sphere, 6 = dome</span></a>
-<a class="sourceLine" id="cb6-50" title="50">D_NEST &lt;-<span class="st"> </span><span class="fl">0.35</span>  <span class="co"># Outer diameter(m)</span></a>
-<a class="sourceLine" id="cb6-51" title="51">TKNEST &lt;-<span class="st"> </span><span class="fl">0.01</span>  <span class="co"># Nest wall thickness (m) </span></a>
-<a class="sourceLine" id="cb6-52" title="52">RONEST &lt;-<span class="st"> </span>D_NEST<span class="op">/</span><span class="dv">2</span></a>
-<a class="sourceLine" id="cb6-53" title="53">RINEST &lt;-<span class="st"> </span>RONEST <span class="op">-</span><span class="st"> </span>TKNEST</a>
-<a class="sourceLine" id="cb6-54" title="54"><span class="cf">if</span> (RINEST <span class="op">&lt;</span><span class="st"> </span>R2) {</a>
-<a class="sourceLine" id="cb6-55" title="55">    <span class="co"># NEST INNER DIAMETER GREATER THAN ANIMAL WITH OR WITHOUT FUR</span></a>
-<a class="sourceLine" id="cb6-56" title="56">    <span class="co"># OUTER DIAMETER. ENLARGE NEST</span></a>
-<a class="sourceLine" id="cb6-57" title="57">    RINEST &lt;-<span class="st"> </span>R2</a>
-<a class="sourceLine" id="cb6-58" title="58">    RONEST &lt;-<span class="st"> </span>RINEST <span class="op">+</span><span class="st"> </span>TKNEST</a>
-<a class="sourceLine" id="cb6-59" title="59">}</a>
-<a class="sourceLine" id="cb6-60" title="60">DENEST &lt;-<span class="st"> </span><span class="dv">1</span>  <span class="co"># Density nest material (kg/m3) </span></a>
-<a class="sourceLine" id="cb6-61" title="61">THCONW &lt;-<span class="st"> </span><span class="fl">0.071</span>  <span class="co"># Nest wall (wood: 0.10-0.35;sheep wool:0.05) thermal conductivity (W/m-C) #!</span></a>
-<a class="sourceLine" id="cb6-62" title="62">ABSHEL &lt;-<span class="st"> </span><span class="fl">0.71</span>  <span class="co"># Nest solar absorptivity (decimal: 1.0 = 100%)</span></a>
-<a class="sourceLine" id="cb6-63" title="63">EMISHEL &lt;-<span class="st"> </span><span class="fl">0.95</span>  <span class="co"># NEest emissivity</span></a>
-<a class="sourceLine" id="cb6-64" title="64">SHELEN &lt;-<span class="st"> </span><span class="fl">0.3</span>  <span class="co"># Length(m) #!</span></a>
-<a class="sourceLine" id="cb6-65" title="65"></a>
-<a class="sourceLine" id="cb6-66" title="66">GEOM.lab &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;R&quot;</span>, <span class="st">&quot;VOL&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="st">&quot;MASFAT&quot;</span>, <span class="st">&quot;VOLFAT&quot;</span>, <span class="st">&quot;ALENTH&quot;</span>, </a>
-<a class="sourceLine" id="cb6-67" title="67">    <span class="st">&quot;AWIDTH&quot;</span>, <span class="st">&quot;AHEIT&quot;</span>, <span class="st">&quot;ATOT&quot;</span>, <span class="st">&quot;ASIL&quot;</span>, <span class="st">&quot;ASILN&quot;</span>, <span class="st">&quot;ASILP&quot;</span>, <span class="st">&quot;AL&quot;</span>, </a>
-<a class="sourceLine" id="cb6-68" title="68">    <span class="st">&quot;GMASS&quot;</span>, <span class="st">&quot;AREASKIN&quot;</span>, <span class="st">&quot;AREA&quot;</span>, <span class="st">&quot;FLSHVL&quot;</span>, <span class="st">&quot;FATTHK&quot;</span>, <span class="st">&quot;ASEMAJ&quot;</span>, </a>
-<a class="sourceLine" id="cb6-69" title="69">    <span class="st">&quot;BSEMIN&quot;</span>, <span class="st">&quot;CSEMIN&quot;</span>, <span class="st">&quot;CONVSK&quot;</span>, <span class="st">&quot;CONVAR&quot;</span>, <span class="st">&quot;R1&quot;</span>, <span class="st">&quot;R2&quot;</span>)</a>
-<a class="sourceLine" id="cb6-70" title="70"><span class="kw">kable</span>(<span class="kw">cbind</span>(GEOM.lab, <span class="kw">t</span>(GEOM.out)))</a></code></pre></div>
+<a class="sourceLine" id="cb6-6" title="6">SHAPE &lt;-<span class="st"> </span><span class="dv">4</span>  <span class="co"># shape, 1 is cylinder, 2 is sphere, 3 is plate, 4 is ellipsoid</span></a>
+<a class="sourceLine" id="cb6-7" title="7">SHAPE_B_REF &lt;-<span class="st"> </span><span class="fl">2.7</span>  <span class="co"># initial ratio between long and short axis (-)</span></a>
+<a class="sourceLine" id="cb6-8" title="8">SHAPE_B &lt;-<span class="st"> </span><span class="fl">2.7</span>  <span class="co"># current ratio between long and short axis (-)</span></a>
+<a class="sourceLine" id="cb6-9" title="9">SHAPE_C &lt;-<span class="st"> </span>SHAPE_B  <span class="co"># current ratio of length:height (plate)</span></a>
+<a class="sourceLine" id="cb6-10" title="10">DHARA &lt;-<span class="st"> </span>DHAR[<span class="dv">1</span>]  <span class="co"># fur diameter, mean (m) (from IRPROP)</span></a>
+<a class="sourceLine" id="cb6-11" title="11">RHOARA &lt;-<span class="st"> </span>RHOAR[<span class="dv">1</span>]  <span class="co"># hair density, mean (1/m2) (from IRPROP)</span></a>
+<a class="sourceLine" id="cb6-12" title="12">ZFUR &lt;-<span class="st"> </span>ZZFUR[<span class="dv">1</span>]  <span class="co"># fur depth, mean (m) (from IRPROP)</span></a>
+<a class="sourceLine" id="cb6-13" title="13">PCOND &lt;-<span class="st"> </span><span class="fl">0.1</span>  <span class="co"># fraction of body in contact with substrate (fractional, 0-1)</span></a>
+<a class="sourceLine" id="cb6-14" title="14">BIRD &lt;-<span class="st"> </span><span class="dv">0</span>  <span class="co"># </span></a>
+<a class="sourceLine" id="cb6-15" title="15">SAMODE &lt;-<span class="st"> </span><span class="dv">0</span>  <span class="co"># if 1, uses bird skin surface area scaling from Walsberg and 1978. JEB Biology 76:185–189, if 2, uses mammal surface area scaling from Stahl (1967) J. of App. Physiology, 453–460.</span></a>
+<a class="sourceLine" id="cb6-16" title="16">ORIENT &lt;-<span class="st"> </span><span class="dv">0</span>  <span class="co"># if 1, largest surface area normal to sun&#39;s ray&#39;s, if 2, largest surface parallel to sun&#39;s rays, if 0, average of normal/parallel posture, </span></a>
+<a class="sourceLine" id="cb6-17" title="17"></a>
+<a class="sourceLine" id="cb6-18" title="18"><span class="co"># call the subroutine</span></a>
+<a class="sourceLine" id="cb6-19" title="19">GEOM.out &lt;-<span class="st"> </span><span class="kw">GEOM</span>(AMASS, ANDENS, FATPCT, SHAPE, ZFUR, SUBQFAT, </a>
+<a class="sourceLine" id="cb6-20" title="20">    SHAPE_B, SHAPE_B_REF, SHAPE_C, DHARA, RHOARA, PCOND, SAMODE, </a>
+<a class="sourceLine" id="cb6-21" title="21">    ORIENT)</a>
+<a class="sourceLine" id="cb6-22" title="22"></a>
+<a class="sourceLine" id="cb6-23" title="23"><span class="co"># output</span></a>
+<a class="sourceLine" id="cb6-24" title="24">VOL &lt;-<span class="st"> </span>GEOM.out[<span class="dv">1</span>]  <span class="co"># volume, m3</span></a>
+<a class="sourceLine" id="cb6-25" title="25">D &lt;-<span class="st"> </span>GEOM.out[<span class="dv">2</span>]  <span class="co"># characteristic dimension for convection, m</span></a>
+<a class="sourceLine" id="cb6-26" title="26">MASFAT &lt;-<span class="st"> </span>GEOM.out[<span class="dv">3</span>]  <span class="co"># mass body fat, kg</span></a>
+<a class="sourceLine" id="cb6-27" title="27">VOLFAT &lt;-<span class="st"> </span>GEOM.out[<span class="dv">4</span>]  <span class="co"># volume body fat, m3</span></a>
+<a class="sourceLine" id="cb6-28" title="28">ALENTH &lt;-<span class="st"> </span>GEOM.out[<span class="dv">5</span>]  <span class="co"># length, m</span></a>
+<a class="sourceLine" id="cb6-29" title="29">AWIDTH &lt;-<span class="st"> </span>GEOM.out[<span class="dv">6</span>]  <span class="co"># width, m</span></a>
+<a class="sourceLine" id="cb6-30" title="30">AHEIT &lt;-<span class="st"> </span>GEOM.out[<span class="dv">7</span>]  <span class="co"># height, m</span></a>
+<a class="sourceLine" id="cb6-31" title="31">ATOT &lt;-<span class="st"> </span>GEOM.out[<span class="dv">8</span>]  <span class="co"># total area at fur/feathers-air interface, m2</span></a>
+<a class="sourceLine" id="cb6-32" title="32">ASIL &lt;-<span class="st"> </span>GEOM.out[<span class="dv">9</span>]  <span class="co"># silhouette area to use in solar calcs, m2 may be normal, parallel or average set via ORIENT</span></a>
+<a class="sourceLine" id="cb6-33" title="33">ASILN &lt;-<span class="st"> </span>GEOM.out[<span class="dv">10</span>]  <span class="co"># silhouette area normal to sun, m2</span></a>
+<a class="sourceLine" id="cb6-34" title="34">ASILP &lt;-<span class="st"> </span>GEOM.out[<span class="dv">11</span>]  <span class="co"># silhouette area parallel to sun, m2</span></a>
+<a class="sourceLine" id="cb6-35" title="35">GMASS &lt;-<span class="st"> </span>GEOM.out[<span class="dv">12</span>]  <span class="co"># mass, g</span></a>
+<a class="sourceLine" id="cb6-36" title="36">AREASKIN &lt;-<span class="st"> </span>GEOM.out[<span class="dv">13</span>]  <span class="co"># area of skin, m2</span></a>
+<a class="sourceLine" id="cb6-37" title="37">FLSHVL &lt;-<span class="st"> </span>GEOM.out[<span class="dv">14</span>]  <span class="co"># flesh volume, m3</span></a>
+<a class="sourceLine" id="cb6-38" title="38">FATTHK &lt;-<span class="st"> </span>GEOM.out[<span class="dv">15</span>]  <span class="co"># fat layer thickness, m</span></a>
+<a class="sourceLine" id="cb6-39" title="39">ASEMAJ &lt;-<span class="st"> </span>GEOM.out[<span class="dv">16</span>]  <span class="co"># semimajor axis length, m</span></a>
+<a class="sourceLine" id="cb6-40" title="40">BSEMIN &lt;-<span class="st"> </span>GEOM.out[<span class="dv">17</span>]  <span class="co"># b semiminor axis length, m</span></a>
+<a class="sourceLine" id="cb6-41" title="41">CSEMIN &lt;-<span class="st"> </span>GEOM.out[<span class="dv">18</span>]  <span class="co"># c semiminor axis length, m (currently only prolate spheroid)</span></a>
+<a class="sourceLine" id="cb6-42" title="42">CONVSK &lt;-<span class="st"> </span>GEOM.out[<span class="dv">19</span>]  <span class="co"># area of skin for evaporation (total skin area - hair area), m2</span></a>
+<a class="sourceLine" id="cb6-43" title="43">CONVAR &lt;-<span class="st"> </span>GEOM.out[<span class="dv">20</span>]  <span class="co"># area for convection (total area minus ventral area, as determined by PCOND), m2</span></a>
+<a class="sourceLine" id="cb6-44" title="44">R1 &lt;-<span class="st"> </span>GEOM.out[<span class="dv">21</span>]  <span class="co"># shape-specific core-skin radius in shortest dimension, m</span></a>
+<a class="sourceLine" id="cb6-45" title="45">R2 &lt;-<span class="st"> </span>GEOM.out[<span class="dv">22</span>]  <span class="co"># shape-specific core-fur radius in shortest dimension, m</span></a>
+<a class="sourceLine" id="cb6-46" title="46"></a>
+<a class="sourceLine" id="cb6-47" title="47"><span class="co"># nest properties</span></a>
+<a class="sourceLine" id="cb6-48" title="48">NESTYP &lt;-<span class="st"> </span><span class="dv">3</span>  <span class="co"># for nest calculations - 0 = none, 1 = flat, 2 = cup, 3 = cylinder, 4 = half cylinder, 5 = sphere, 6 = dome</span></a>
+<a class="sourceLine" id="cb6-49" title="49">D_NEST &lt;-<span class="st"> </span><span class="fl">0.35</span>  <span class="co"># Outer diameter(m)</span></a>
+<a class="sourceLine" id="cb6-50" title="50">TKNEST &lt;-<span class="st"> </span><span class="fl">0.01</span>  <span class="co"># Nest wall thickness (m) </span></a>
+<a class="sourceLine" id="cb6-51" title="51">RONEST &lt;-<span class="st"> </span>D_NEST<span class="op">/</span><span class="dv">2</span></a>
+<a class="sourceLine" id="cb6-52" title="52">RINEST &lt;-<span class="st"> </span>RONEST <span class="op">-</span><span class="st"> </span>TKNEST</a>
+<a class="sourceLine" id="cb6-53" title="53"><span class="cf">if</span> (RINEST <span class="op">&lt;</span><span class="st"> </span>R2) {</a>
+<a class="sourceLine" id="cb6-54" title="54">    <span class="co"># NEST INNER DIAMETER GREATER THAN ANIMAL WITH OR WITHOUT FUR</span></a>
+<a class="sourceLine" id="cb6-55" title="55">    <span class="co"># OUTER DIAMETER. ENLARGE NEST</span></a>
+<a class="sourceLine" id="cb6-56" title="56">    RINEST &lt;-<span class="st"> </span>R2</a>
+<a class="sourceLine" id="cb6-57" title="57">    RONEST &lt;-<span class="st"> </span>RINEST <span class="op">+</span><span class="st"> </span>TKNEST</a>
+<a class="sourceLine" id="cb6-58" title="58">}</a>
+<a class="sourceLine" id="cb6-59" title="59">DENEST &lt;-<span class="st"> </span><span class="dv">1</span>  <span class="co"># Density nest material (kg/m3) </span></a>
+<a class="sourceLine" id="cb6-60" title="60">THCONW &lt;-<span class="st"> </span><span class="fl">0.071</span>  <span class="co"># Nest wall (wood: 0.10-0.35;sheep wool:0.05) thermal conductivity (W/m-C) #!</span></a>
+<a class="sourceLine" id="cb6-61" title="61">ABSHEL &lt;-<span class="st"> </span><span class="fl">0.71</span>  <span class="co"># Nest solar absorptivity (decimal: 1.0 = 100%)</span></a>
+<a class="sourceLine" id="cb6-62" title="62">EMISHEL &lt;-<span class="st"> </span><span class="fl">0.95</span>  <span class="co"># NEest emissivity</span></a>
+<a class="sourceLine" id="cb6-63" title="63">SHELEN &lt;-<span class="st"> </span><span class="fl">0.3</span>  <span class="co"># Length(m) #!</span></a>
+<a class="sourceLine" id="cb6-64" title="64"></a>
+<a class="sourceLine" id="cb6-65" title="65">GEOM.lab &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;VOL&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="st">&quot;MASFAT&quot;</span>, <span class="st">&quot;VOLFAT&quot;</span>, <span class="st">&quot;ALENTH&quot;</span>, <span class="st">&quot;AWIDTH&quot;</span>, </a>
+<a class="sourceLine" id="cb6-66" title="66">    <span class="st">&quot;AHEIT&quot;</span>, <span class="st">&quot;ATOT&quot;</span>, <span class="st">&quot;ASIL&quot;</span>, <span class="st">&quot;ASILN&quot;</span>, <span class="st">&quot;ASILP&quot;</span>, <span class="st">&quot;GMASS&quot;</span>, <span class="st">&quot;AREASKIN&quot;</span>, </a>
+<a class="sourceLine" id="cb6-67" title="67">    <span class="st">&quot;FLSHVL&quot;</span>, <span class="st">&quot;FATTHK&quot;</span>, <span class="st">&quot;ASEMAJ&quot;</span>, <span class="st">&quot;BSEMIN&quot;</span>, <span class="st">&quot;CSEMIN&quot;</span>, <span class="st">&quot;CONVSK&quot;</span>, </a>
+<a class="sourceLine" id="cb6-68" title="68">    <span class="st">&quot;CONVAR&quot;</span>, <span class="st">&quot;R1&quot;</span>, <span class="st">&quot;R2&quot;</span>)</a>
+<a class="sourceLine" id="cb6-69" title="69"><span class="kw">kable</span>(<span class="kw">cbind</span>(GEOM.lab, <span class="kw">t</span>(GEOM.out)))</a></code></pre></div>
 <table>
 <thead>
 <tr class="header">
@@ -594,56 +600,48 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">R</td>
-<td>0.133919704342752</td>
-</tr>
-<tr class="even">
 <td align="left">VOL</td>
 <td>0.01</td>
 </tr>
-<tr class="odd">
-<td align="left">D</td>
-<td>0.209960780691478</td>
-</tr>
 <tr class="even">
+<td align="left">D</td>
+<td>0.215443459147026</td>
+</tr>
+<tr class="odd">
 <td align="left">MASFAT</td>
 <td>2</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">VOLFAT</td>
 <td>0.00221975582685905</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">ALENTH</td>
-<td>0.264824885892749</td>
+<td>0.529649771785497</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">AWIDTH</td>
-<td>0.0980832910713883</td>
-</tr>
-<tr class="even">
-<td align="left">AHEIT</td>
-<td>0.0980832910713883</td>
+<td>0.196166582142777</td>
 </tr>
 <tr class="odd">
-<td align="left">ATOT</td>
-<td>0.300907206692554</td>
+<td align="left">AHEIT</td>
+<td>0.196166582142777</td>
 </tr>
 <tr class="even">
+<td align="left">ATOT</td>
+<td>0.308349671796026</td>
+</tr>
+<tr class="odd">
 <td align="left">ASIL</td>
 <td>0.0615297646245973</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">ASILN</td>
 <td>0.0884364061999146</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">ASILP</td>
 <td>0.0346231230492801</td>
-</tr>
-<tr class="odd">
-<td align="left">AL</td>
-<td>3.52297737969029e-316</td>
 </tr>
 <tr class="even">
 <td align="left">GMASS</td>
@@ -654,49 +652,45 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <td>0.269773486865498</td>
 </tr>
 <tr class="even">
-<td align="left">AREA</td>
-<td>0.300907206692554</td>
-</tr>
-<tr class="odd">
 <td align="left">FLSHVL</td>
 <td>0.00778024417314096</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">FATTHK</td>
 <td>0.00980642236948426</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">ASEMAJ</td>
 <td>0.264824885892749</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">BSEMIN</td>
 <td>0.0980832910713883</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">CSEMIN</td>
 <td>0.0980832910713883</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">CONVSK</td>
 <td>0.262885895484012</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">CONVAR</td>
-<td>0.270816486023299</td>
+<td>0.277514704616423</td>
+</tr>
+<tr class="odd">
+<td align="left">R1</td>
+<td>0.0980832910713883</td>
 </tr>
 <tr class="even">
-<td align="left">R1</td>
-<td>0.095980390345739</td>
-</tr>
-<tr class="odd">
 <td align="left">R2</td>
-<td>0.104980390345739</td>
+<td>0.107083291071388</td>
 </tr>
 </tbody>
 </table>
 <p>Plot of current animal configuration.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1"><span class="cf">if</span> (NGEOM <span class="op">==</span><span class="st"> </span><span class="dv">4</span>) {</a>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1"><span class="cf">if</span> (SHAPE <span class="op">==</span><span class="st"> </span><span class="dv">4</span>) {</a>
 <a class="sourceLine" id="cb7-2" title="2">    <span class="co"># ellipsoid</span></a>
 <a class="sourceLine" id="cb7-3" title="3">    <span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</a>
 <a class="sourceLine" id="cb7-4" title="4">    <span class="kw">plot</span>(<span class="kw">c</span>(<span class="dv">0</span>, ASEMAJ <span class="op">*</span><span class="st"> </span><span class="dv">2</span> <span class="op">+</span><span class="st"> </span>ZFUR <span class="op">*</span><span class="st"> </span><span class="dv">2</span>), <span class="kw">c</span>(<span class="dv">0</span>, ASEMAJ <span class="op">*</span><span class="st"> </span><span class="dv">2</span> <span class="op">+</span><span class="st"> </span>ZFUR <span class="op">*</span><span class="st"> </span></a>
@@ -811,7 +805,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb9-5" title="5">ABSSB &lt;-<span class="st"> </span><span class="fl">0.8</span>  <span class="co"># solar absorptivity of substrate (fractional, 0-1)</span></a>
 <a class="sourceLine" id="cb9-6" title="6"></a>
 <a class="sourceLine" id="cb9-7" title="7"><span class="co"># traits</span></a>
-<a class="sourceLine" id="cb9-8" title="8">AREA &lt;-<span class="st"> </span>AREA  <span class="co"># surface area for solar exchange, m2 (from GEOM)</span></a>
+<a class="sourceLine" id="cb9-8" title="8">AREA &lt;-<span class="st"> </span>ATOT  <span class="co"># surface area for solar exchange, m2 (from GEOM)</span></a>
 <a class="sourceLine" id="cb9-9" title="9">ABSAND &lt;-<span class="st"> </span><span class="fl">0.8</span>  <span class="co"># solar absorptivity of dorsal fur (fractional, 0-1)</span></a>
 <a class="sourceLine" id="cb9-10" title="10">ABSANV &lt;-<span class="st"> </span><span class="fl">0.8</span>  <span class="co"># solar absorptivity of ventral fur (fractional, 0-1)</span></a>
 <a class="sourceLine" id="cb9-11" title="11">ASIL &lt;-<span class="st"> </span>ASIL  <span class="co"># silhouette area normal to sun, m2 (from GEOM)</span></a>
@@ -857,7 +851,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <tbody>
 <tr class="odd">
 <td align="left">QSOLAR</td>
-<td>87.8560911079642</td>
+<td>88.9278060828641</td>
 </tr>
 <tr class="even">
 <td align="left">QSDIR</td>
@@ -869,23 +863,23 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </tr>
 <tr class="even">
 <td align="left">QSSKY</td>
-<td>14.4435459212426</td>
+<td>14.8007842462092</td>
 </tr>
 <tr class="odd">
 <td align="left">QSRSB</td>
-<td>28.8870918424852</td>
+<td>29.6015684924185</td>
 </tr>
 <tr class="even">
 <td align="left">QSDIFF</td>
-<td>43.3306377637278</td>
+<td>44.4023527386277</td>
 </tr>
 <tr class="odd">
 <td align="left">QDORSL</td>
-<td>58.968999265479</td>
+<td>59.3262375904456</td>
 </tr>
 <tr class="even">
 <td align="left">QVENTR</td>
-<td>28.8870918424852</td>
+<td>29.6015684924185</td>
 </tr>
 </tbody>
 </table>
@@ -897,7 +891,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb10-2" title="2">TS &lt;-<span class="st"> </span><span class="dv">33</span>  <span class="co"># skin temperature (°C)</span></a>
 <a class="sourceLine" id="cb10-3" title="3">TENV &lt;-<span class="st"> </span><span class="dv">20</span>  <span class="co"># air temperature (°C)</span></a>
 <a class="sourceLine" id="cb10-4" title="4">TFA &lt;-<span class="st"> </span><span class="dv">10</span>  <span class="co"># fur/air interface temperature (°C)</span></a>
-<a class="sourceLine" id="cb10-5" title="5">NGEOM &lt;-<span class="st"> </span><span class="dv">1</span>  <span class="co"># cylinder (ngeom = 1), sphere (ngeom = 2) and ellipsoid (ngeom = 4). If a truncated cone (5) or ellipsoidal cylinder (3), we will use the cylinder equations (ngeom = 1).</span></a>
+<a class="sourceLine" id="cb10-5" title="5">SHAPE &lt;-<span class="st"> </span><span class="dv">4</span>  <span class="co"># shape, 1 is cylinder, 2 is sphere, 3 is plate, 4 is ellipsoid</span></a>
 <a class="sourceLine" id="cb10-6" title="6">SURFAR &lt;-<span class="st"> </span>CONVAR  <span class="co"># surface area for convection, m2 (from GEOM)</span></a>
 <a class="sourceLine" id="cb10-7" title="7">FLTYPE &lt;-<span class="st"> </span><span class="dv">0</span>  <span class="co"># FLUID TYPE: 0 = AIR; 1 = FRESH WATER; 2 = SALT WATER</span></a>
 <a class="sourceLine" id="cb10-8" title="8">FURTST &lt;-<span class="st"> </span>FURTST  <span class="co"># test of fur presence (-) from IRPROP </span></a>
@@ -906,7 +900,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb10-11" title="11">BP &lt;-<span class="st"> </span><span class="dv">-1</span>  <span class="co"># Pa, negatve means altitude is used</span></a>
 <a class="sourceLine" id="cb10-12" title="12"></a>
 <a class="sourceLine" id="cb10-13" title="13"><span class="co"># run subroutine</span></a>
-<a class="sourceLine" id="cb10-14" title="14">CONV.out &lt;-<span class="st"> </span><span class="kw">CONV</span>(TS, TENV, NGEOM, SURFAR, FLTYPE, FURTST, D, </a>
+<a class="sourceLine" id="cb10-14" title="14">CONV.out &lt;-<span class="st"> </span><span class="kw">CONV</span>(TS, TENV, SHAPE, SURFAR, FLTYPE, FURTST, D, </a>
 <a class="sourceLine" id="cb10-15" title="15">    TFA, VEL, ZFUR, BP, ELEV)</a>
 <a class="sourceLine" id="cb10-16" title="16"></a>
 <a class="sourceLine" id="cb10-17" title="17">QCONV &lt;-<span class="st"> </span>CONV.out[<span class="dv">1</span>]  <span class="co"># convective heat loss (W)</span></a>
@@ -937,15 +931,15 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <tbody>
 <tr class="odd">
 <td align="left">QCONV</td>
-<td>-21.5775385511703</td>
+<td>-38.3826769592207</td>
 </tr>
 <tr class="even">
 <td align="left">HC</td>
-<td>7.96758678469596</td>
+<td>13.8308624086326</td>
 </tr>
 <tr class="odd">
 <td align="left">HCFREE</td>
-<td>3.52841770265851</td>
+<td>4.18906008479261</td>
 </tr>
 <tr class="even">
 <td align="left">HCFOR</td>
@@ -953,27 +947,27 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </tr>
 <tr class="odd">
 <td align="left">HD</td>
-<td>0.0104776479629381</td>
+<td>0.0166500419458664</td>
 </tr>
 <tr class="even">
 <td align="left">HDFREE</td>
-<td>0.0032837486355189</td>
+<td>0.00389858046772071</td>
 </tr>
 <tr class="odd">
 <td align="left">HDFORC</td>
-<td>0.00719389932741916</td>
+<td>0.0127514614781457</td>
 </tr>
 <tr class="even">
 <td align="left">ANU</td>
-<td>63.2552502762342</td>
+<td>115.050184709447</td>
 </tr>
 <tr class="odd">
 <td align="left">RE</td>
-<td>13908.5124848077</td>
+<td>14271.7036555494</td>
 </tr>
 <tr class="even">
 <td align="left">GR</td>
-<td>13587211.6824377</td>
+<td>14679651.4926261</td>
 </tr>
 <tr class="odd">
 <td align="left">PR</td>
@@ -981,7 +975,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </tr>
 <tr class="even">
 <td align="left">RA</td>
-<td>9681096.21554631</td>
+<td>10459476.2952353</td>
 </tr>
 <tr class="odd">
 <td align="left">SC</td>
@@ -1008,18 +1002,23 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb11-9" title="9">PCTBAREVAP &lt;-<span class="st"> </span><span class="dv">0</span>  <span class="co"># surface area for evaporation that is skin, e.g. licking paws (%)</span></a>
 <a class="sourceLine" id="cb11-10" title="10">PCTEYES &lt;-<span class="st"> </span><span class="fl">0.03</span>  <span class="co"># surface area made up by the eye (%) - make zero if sleeping</span></a>
 <a class="sourceLine" id="cb11-11" title="11">ZFUR &lt;-<span class="st"> </span>ZFUR  <span class="co"># fur depth, m</span></a>
-<a class="sourceLine" id="cb11-12" title="12"></a>
-<a class="sourceLine" id="cb11-13" title="13">SEVAP.out &lt;-<span class="st"> </span><span class="kw">SEVAP</span>(BP, TA, RELHUM, VEL, TC, TSKIN, ELEV, SKINW, </a>
-<a class="sourceLine" id="cb11-14" title="14">    FLYHR, CONVSK, HD, HDFREE, PCTBAREVAP, PCTEYES, ZFUR, BAREVAP)</a>
-<a class="sourceLine" id="cb11-15" title="15"></a>
-<a class="sourceLine" id="cb11-16" title="16">QSEVAP &lt;-<span class="st"> </span>SEVAP.out[<span class="dv">1</span>]  <span class="co"># evaporative heat loss (W)</span></a>
-<a class="sourceLine" id="cb11-17" title="17">WEYES &lt;-<span class="st"> </span>SEVAP.out[<span class="dv">2</span>]  <span class="co"># ocular evaporation (kg/s)</span></a>
-<a class="sourceLine" id="cb11-18" title="18">WCUTHF &lt;-<span class="st"> </span>SEVAP.out[<span class="dv">3</span>]  <span class="co"># forced cutaneous evaporation (kg/s)</span></a>
-<a class="sourceLine" id="cb11-19" title="19">WCUTF &lt;-<span class="st"> </span>SEVAP.out[<span class="dv">4</span>]  <span class="co"># free cutaneous evaporation (kg/s)</span></a>
-<a class="sourceLine" id="cb11-20" title="20">WCUT &lt;-<span class="st"> </span>SEVAP.out[<span class="dv">5</span>]  <span class="co"># total cutaneous evaporation (kg/s)</span></a>
-<a class="sourceLine" id="cb11-21" title="21"></a>
-<a class="sourceLine" id="cb11-22" title="22">SEVAP.lab &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;QSEVAP&quot;</span>, <span class="st">&quot;WEYES&quot;</span>, <span class="st">&quot;WCUTHF&quot;</span>, <span class="st">&quot;WCUTF&quot;</span>, <span class="st">&quot;WCUT&quot;</span>)</a>
-<a class="sourceLine" id="cb11-23" title="23"><span class="kw">kable</span>(<span class="kw">cbind</span>(SEVAP.lab, <span class="kw">t</span>(SEVAP.out)))</a></code></pre></div>
+<a class="sourceLine" id="cb11-12" title="12">FURWET &lt;-<span class="st"> </span><span class="dv">0</span>  <span class="co"># part of the fur surface that is wet (%)</span></a>
+<a class="sourceLine" id="cb11-13" title="13"></a>
+<a class="sourceLine" id="cb11-14" title="14">SEVAP.out &lt;-<span class="st"> </span><span class="kw">SEVAP</span>(BP, TA, RELHUM, VEL, TC, TSKIN, ELEV, SKINW, </a>
+<a class="sourceLine" id="cb11-15" title="15">    FLYHR, CONVSK, HD, HDFREE, PCTBAREVAP, PCTEYES, ZFUR, FURWET, </a>
+<a class="sourceLine" id="cb11-16" title="16">    TFA, CONVAR)</a>
+<a class="sourceLine" id="cb11-17" title="17"></a>
+<a class="sourceLine" id="cb11-18" title="18">QSEVAP &lt;-<span class="st"> </span>SEVAP.out[<span class="dv">1</span>]  <span class="co"># skin evaporative heat loss (W)</span></a>
+<a class="sourceLine" id="cb11-19" title="19">WEYES &lt;-<span class="st"> </span>SEVAP.out[<span class="dv">2</span>]  <span class="co"># ocular evaporation (kg/s)</span></a>
+<a class="sourceLine" id="cb11-20" title="20">WCUTHF &lt;-<span class="st"> </span>SEVAP.out[<span class="dv">3</span>]  <span class="co"># forced cutaneous evaporation (kg/s)</span></a>
+<a class="sourceLine" id="cb11-21" title="21">WCUTF &lt;-<span class="st"> </span>SEVAP.out[<span class="dv">4</span>]  <span class="co"># free cutaneous evaporation (kg/s)</span></a>
+<a class="sourceLine" id="cb11-22" title="22">WCUT &lt;-<span class="st"> </span>SEVAP.out[<span class="dv">5</span>]  <span class="co"># total cutaneous evaporation (kg/s)</span></a>
+<a class="sourceLine" id="cb11-23" title="23">WTFUR &lt;-<span class="st"> </span>SEVAP.out[<span class="dv">5</span>]  <span class="co"># total fur evaporation (kg/s)</span></a>
+<a class="sourceLine" id="cb11-24" title="24">QFSEVAP &lt;-<span class="st"> </span>SEVAP.out[<span class="dv">5</span>]  <span class="co"># fur evaporative heat loss (W))</span></a>
+<a class="sourceLine" id="cb11-25" title="25"></a>
+<a class="sourceLine" id="cb11-26" title="26">SEVAP.lab &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;QSEVAP&quot;</span>, <span class="st">&quot;WEYES&quot;</span>, <span class="st">&quot;WCUTHF&quot;</span>, <span class="st">&quot;WCUTF&quot;</span>, <span class="st">&quot;WCUT&quot;</span>, </a>
+<a class="sourceLine" id="cb11-27" title="27">    <span class="st">&quot;WTFUR&quot;</span>, <span class="st">&quot;QFSEVAP&quot;</span>)</a>
+<a class="sourceLine" id="cb11-28" title="28"><span class="kw">kable</span>(<span class="kw">cbind</span>(SEVAP.lab, <span class="kw">t</span>(SEVAP.out)))</a></code></pre></div>
 <table>
 <thead>
 <tr class="header">
@@ -1030,11 +1029,11 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <tbody>
 <tr class="odd">
 <td align="left">QSEVAP</td>
-<td>7.57114475380171</td>
+<td>9.01497449278671</td>
 </tr>
 <tr class="even">
 <td align="left">WEYES</td>
-<td>2.66202879964222e-08</td>
+<td>4.23023290455338e-08</td>
 </tr>
 <tr class="odd">
 <td align="left">WCUTHF</td>
@@ -1042,11 +1041,19 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </tr>
 <tr class="even">
 <td align="left">WCUTF</td>
-<td>3.05907604501779e-06</td>
+<td>3.63184136245377e-06</td>
 </tr>
 <tr class="odd">
 <td align="left">WCUT</td>
-<td>3.05907604501779e-06</td>
+<td>3.63184136245377e-06</td>
+</tr>
+<tr class="even">
+<td align="left">WTFUR</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td align="left">QFSEVAP</td>
+<td>0</td>
 </tr>
 </tbody>
 </table>
@@ -1098,14 +1105,14 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb12-42" title="42">FAVEGREF &lt;-<span class="st"> </span>FAVEG  <span class="co"># vegetation</span></a>
 <a class="sourceLine" id="cb12-43" title="43"></a>
 <a class="sourceLine" id="cb12-44" title="44">FURTHRMK &lt;-<span class="st"> </span><span class="dv">0</span>  <span class="co"># user-specified fur thermal conductivity (W/mK), not used if 0</span></a>
-<a class="sourceLine" id="cb12-45" title="45">NGEOM &lt;-<span class="st"> </span><span class="dv">4</span>  <span class="co"># cylinder (ngeom = 1), sphere (ngeom = 2) and ellipsoid (ngeom = 4). If a truncated cone (5) or ellipsoidal cylinder (3), we will use the cylinder equations (ngeom=1).</span></a>
+<a class="sourceLine" id="cb12-45" title="45">SHAPE &lt;-<span class="st"> </span><span class="dv">4</span>  <span class="co"># shape, 1 is cylinder, 2 is sphere, 3 is plate, 4 is ellipsoid</span></a>
 <a class="sourceLine" id="cb12-46" title="46"></a>
 <a class="sourceLine" id="cb12-47" title="47"><span class="co"># Initial values</span></a>
 <a class="sourceLine" id="cb12-48" title="48">TS &lt;-<span class="st"> </span>TC  <span class="co"># CURRENT GUESS OF OBJECT SURFACE TEMPERATURE</span></a>
 <a class="sourceLine" id="cb12-49" title="49">TFA &lt;-<span class="st"> </span>TA  <span class="co"># current guess of fur/air interface temperature</span></a>
 <a class="sourceLine" id="cb12-50" title="50"></a>
 <a class="sourceLine" id="cb12-51" title="51">DIFTOL &lt;-<span class="st"> </span><span class="fl">0.001</span>  <span class="co"># tolerance for SIMULSOL</span></a>
-<a class="sourceLine" id="cb12-52" title="52">SIMULSOL.out &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">data =</span> <span class="dv">0</span>, <span class="dt">nrow =</span> <span class="dv">2</span>, <span class="dt">ncol =</span> <span class="dv">14</span>)  <span class="co"># vector to hold the SIMULSOL results for dorsal and ventral side</span></a>
+<a class="sourceLine" id="cb12-52" title="52">SIMULSOL.out &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">data =</span> <span class="dv">0</span>, <span class="dt">nrow =</span> <span class="dv">2</span>, <span class="dt">ncol =</span> <span class="dv">15</span>)  <span class="co"># vector to hold the SIMULSOL results for dorsal and ventral side</span></a>
 <a class="sourceLine" id="cb12-53" title="53"></a>
 <a class="sourceLine" id="cb12-54" title="54"><span class="co"># repeat for each side, dorsal and ventral, of the animal</span></a>
 <a class="sourceLine" id="cb12-55" title="55"><span class="cf">for</span> (S <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">2</span>) {</a>
@@ -1188,47 +1195,44 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb12-132" title="132">        VOL &lt;-<span class="st"> </span>FLSHVL</a>
 <a class="sourceLine" id="cb12-133" title="133">    }</a>
 <a class="sourceLine" id="cb12-134" title="134">    </a>
-<a class="sourceLine" id="cb12-135" title="135">    <span class="co"># Getting compressed fur thermal conductivity (outputs a</span></a>
-<a class="sourceLine" id="cb12-136" title="136">    <span class="co"># variable called KFURCMPRS)</span></a>
-<a class="sourceLine" id="cb12-137" title="137">    AREACND &lt;-<span class="st"> </span>ATOT <span class="op">*</span><span class="st"> </span>PTCOND</a>
-<a class="sourceLine" id="cb12-138" title="138">    <span class="co"># CALL COMPRSKEFF # to do</span></a>
-<a class="sourceLine" id="cb12-139" title="139">    KFURCMPRS &lt;-<span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb12-140" title="140">    ZFURCOMP &lt;-<span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb12-141" title="141">    CD &lt;-<span class="st"> </span>AREACND <span class="op">*</span><span class="st"> </span>((KFURCMPRS<span class="op">/</span>ZFURCOMP))</a>
-<a class="sourceLine" id="cb12-142" title="142">    </a>
-<a class="sourceLine" id="cb12-143" title="143">    <span class="co"># package up inputs</span></a>
-<a class="sourceLine" id="cb12-144" title="144">    FURVARS &lt;-<span class="st"> </span><span class="kw">c</span>(LEN, ZFUR, FURTHRMK, KEFF, BETARA, FURTST, ZL)</a>
-<a class="sourceLine" id="cb12-145" title="145">    GEOMVARS &lt;-<span class="st"> </span><span class="kw">c</span>(NGEOM, SUBQFAT, CONVAR, VOL, D, CONVAR, CONVSK, </a>
-<a class="sourceLine" id="cb12-146" title="146">        RFUR, RFLESH, RSKIN, XR, RRAD, ASEMAJ, BSEMIN, CSEMIN, </a>
-<a class="sourceLine" id="cb12-147" title="147">        CD)</a>
-<a class="sourceLine" id="cb12-148" title="148">    ENVVARS &lt;-<span class="st"> </span><span class="kw">c</span>(FLTYPE, TA, TS, TBUSH, TVEG, TLOWER, TSKY, TCONDSB, </a>
-<a class="sourceLine" id="cb12-149" title="149">        RH, VEL, BP, ELEV, FASKY, FABUSH, FAVEG, FAGRD, QSLR)</a>
-<a class="sourceLine" id="cb12-150" title="150">    TRAITS &lt;-<span class="st"> </span><span class="kw">c</span>(TC, AK1, AK2, EMISAN, FATTHK, FLYHR, BAREVAP, </a>
-<a class="sourceLine" id="cb12-151" title="151">        PCTBAREVAP, PCTEYES)</a>
-<a class="sourceLine" id="cb12-152" title="152">    </a>
-<a class="sourceLine" id="cb12-153" title="153">    <span class="co"># set IPT, the geometry assumed in SIMULSOL: 1 = cylinder, 2</span></a>
-<a class="sourceLine" id="cb12-154" title="154">    <span class="co"># = sphere, 3 = ellipsoid</span></a>
-<a class="sourceLine" id="cb12-155" title="155">    <span class="cf">if</span> (NGEOM <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">5</span>)) {</a>
-<a class="sourceLine" id="cb12-156" title="156">        IPT &lt;-<span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb12-157" title="157">    }</a>
-<a class="sourceLine" id="cb12-158" title="158">    <span class="cf">if</span> (NGEOM <span class="op">==</span><span class="st"> </span><span class="dv">2</span>) {</a>
-<a class="sourceLine" id="cb12-159" title="159">        IPT &lt;-<span class="st"> </span><span class="dv">2</span></a>
-<a class="sourceLine" id="cb12-160" title="160">    }</a>
-<a class="sourceLine" id="cb12-161" title="161">    <span class="cf">if</span> (NGEOM <span class="op">==</span><span class="st"> </span><span class="dv">4</span>) {</a>
-<a class="sourceLine" id="cb12-162" title="162">        IPT &lt;-<span class="st"> </span><span class="dv">3</span></a>
-<a class="sourceLine" id="cb12-163" title="163">    }</a>
-<a class="sourceLine" id="cb12-164" title="164">    </a>
-<a class="sourceLine" id="cb12-165" title="165">    <span class="co"># call SIMULSOL</span></a>
-<a class="sourceLine" id="cb12-166" title="166">    SIMULSOL.out[S, ] &lt;-<span class="st"> </span><span class="kw">SIMULSOL</span>(DIFTOL, IPT, FURVARS, GEOMVARS, </a>
-<a class="sourceLine" id="cb12-167" title="167">        ENVVARS, TRAITS, TFA, SKINW, TS)</a>
-<a class="sourceLine" id="cb12-168" title="168">}</a>
-<a class="sourceLine" id="cb12-169" title="169">SIMULSOL.out &lt;-<span class="st"> </span><span class="kw">cbind</span>(<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), SIMULSOL.out)</a>
-<a class="sourceLine" id="cb12-170" title="170"><span class="kw">colnames</span>(SIMULSOL.out) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;SIDE&quot;</span>, <span class="st">&quot;TFA&quot;</span>, <span class="st">&quot;TSKIN&quot;</span>, <span class="st">&quot;QCONV&quot;</span>, </a>
-<a class="sourceLine" id="cb12-171" title="171">    <span class="st">&quot;QCOND&quot;</span>, <span class="st">&quot;QGENNET&quot;</span>, <span class="st">&quot;QSEVAP&quot;</span>, <span class="st">&quot;QRAD&quot;</span>, <span class="st">&quot;QSLR&quot;</span>, <span class="st">&quot;QRSKY&quot;</span>, <span class="st">&quot;QRBSH&quot;</span>, </a>
-<a class="sourceLine" id="cb12-172" title="172">    <span class="st">&quot;QRVEG&quot;</span>, <span class="st">&quot;QRGRD&quot;</span>, <span class="st">&quot;NTRY&quot;</span>, <span class="st">&quot;SUCCESS&quot;</span>)</a>
-<a class="sourceLine" id="cb12-173" title="173">tSIMULSOL.out &lt;-<span class="st"> </span><span class="kw">t</span>(SIMULSOL.out)</a>
-<a class="sourceLine" id="cb12-174" title="174"><span class="kw">colnames</span>(tSIMULSOL.out) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;DORSAL&quot;</span>, <span class="st">&quot;VENTRAL&quot;</span>)</a>
-<a class="sourceLine" id="cb12-175" title="175"><span class="kw">kable</span>(tSIMULSOL.out)</a></code></pre></div>
+<a class="sourceLine" id="cb12-135" title="135">    <span class="co"># Getting compressed fur thermal conductivity</span></a>
+<a class="sourceLine" id="cb12-136" title="136">    AREACND &lt;-<span class="st"> </span>ATOT <span class="op">*</span><span class="st"> </span>PCOND</a>
+<a class="sourceLine" id="cb12-137" title="137">    CD &lt;-<span class="st"> </span>AREACND <span class="op">*</span><span class="st"> </span>((KFURCMPRS<span class="op">/</span>ZFURCOMP))</a>
+<a class="sourceLine" id="cb12-138" title="138">    </a>
+<a class="sourceLine" id="cb12-139" title="139">    <span class="co"># package up inputs</span></a>
+<a class="sourceLine" id="cb12-140" title="140">    FURVARS &lt;-<span class="st"> </span><span class="kw">c</span>(LEN, ZFUR, FURTHRMK, KEFF, BETARA, FURTST, ZL)</a>
+<a class="sourceLine" id="cb12-141" title="141">    GEOMVARS &lt;-<span class="st"> </span><span class="kw">c</span>(SHAPE, SUBQFAT, CONVAR, VOL, D, CONVAR, CONVSK, </a>
+<a class="sourceLine" id="cb12-142" title="142">        RFUR, RFLESH, RSKIN, XR, RRAD, ASEMAJ, BSEMIN, CSEMIN, </a>
+<a class="sourceLine" id="cb12-143" title="143">        CD)</a>
+<a class="sourceLine" id="cb12-144" title="144">    ENVVARS &lt;-<span class="st"> </span><span class="kw">c</span>(FLTYPE, TA, TS, TBUSH, TVEG, TLOWER, TSKY, TCONDSB, </a>
+<a class="sourceLine" id="cb12-145" title="145">        RH, VEL, BP, ELEV, FASKY, FABUSH, FAVEG, FAGRD, QSLR)</a>
+<a class="sourceLine" id="cb12-146" title="146">    TRAITS &lt;-<span class="st"> </span><span class="kw">c</span>(TC, AK1, AK2, EMISAN, FATTHK, FLYHR, FURWET, </a>
+<a class="sourceLine" id="cb12-147" title="147">        PCTBAREVAP, PCTEYES)</a>
+<a class="sourceLine" id="cb12-148" title="148">    </a>
+<a class="sourceLine" id="cb12-149" title="149">    <span class="co"># set IPT, the geometry assumed in SIMULSOL: 1 = cylinder, 2</span></a>
+<a class="sourceLine" id="cb12-150" title="150">    <span class="co"># = sphere, 3 = ellipsoid</span></a>
+<a class="sourceLine" id="cb12-151" title="151">    <span class="cf">if</span> (SHAPE <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">5</span>)) {</a>
+<a class="sourceLine" id="cb12-152" title="152">        IPT &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb12-153" title="153">    }</a>
+<a class="sourceLine" id="cb12-154" title="154">    <span class="cf">if</span> (SHAPE <span class="op">==</span><span class="st"> </span><span class="dv">2</span>) {</a>
+<a class="sourceLine" id="cb12-155" title="155">        IPT &lt;-<span class="st"> </span><span class="dv">2</span></a>
+<a class="sourceLine" id="cb12-156" title="156">    }</a>
+<a class="sourceLine" id="cb12-157" title="157">    <span class="cf">if</span> (SHAPE <span class="op">==</span><span class="st"> </span><span class="dv">4</span>) {</a>
+<a class="sourceLine" id="cb12-158" title="158">        IPT &lt;-<span class="st"> </span><span class="dv">3</span></a>
+<a class="sourceLine" id="cb12-159" title="159">    }</a>
+<a class="sourceLine" id="cb12-160" title="160">    </a>
+<a class="sourceLine" id="cb12-161" title="161">    <span class="co"># call SIMULSOL</span></a>
+<a class="sourceLine" id="cb12-162" title="162">    SIMULSOL.out[S, ] &lt;-<span class="st"> </span><span class="kw">SIMULSOL</span>(DIFTOL, IPT, FURVARS, GEOMVARS, </a>
+<a class="sourceLine" id="cb12-163" title="163">        ENVVARS, TRAITS, TFA, SKINW, TS)</a>
+<a class="sourceLine" id="cb12-164" title="164">}</a>
+<a class="sourceLine" id="cb12-165" title="165"></a>
+<a class="sourceLine" id="cb12-166" title="166">SIMULSOL.out &lt;-<span class="st"> </span><span class="kw">cbind</span>(<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), SIMULSOL.out)</a>
+<a class="sourceLine" id="cb12-167" title="167"><span class="kw">colnames</span>(SIMULSOL.out) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;SIDE&quot;</span>, <span class="st">&quot;TFA&quot;</span>, <span class="st">&quot;TSKIN&quot;</span>, <span class="st">&quot;QCONV&quot;</span>, </a>
+<a class="sourceLine" id="cb12-168" title="168">    <span class="st">&quot;QCOND&quot;</span>, <span class="st">&quot;QGENNET&quot;</span>, <span class="st">&quot;QSEVAP&quot;</span>, <span class="st">&quot;QRAD&quot;</span>, <span class="st">&quot;QSLR&quot;</span>, <span class="st">&quot;QRSKY&quot;</span>, <span class="st">&quot;QRBSH&quot;</span>, </a>
+<a class="sourceLine" id="cb12-169" title="169">    <span class="st">&quot;QRVEG&quot;</span>, <span class="st">&quot;QRGRD&quot;</span>, <span class="st">&quot;QFSEVAP&quot;</span>, <span class="st">&quot;NTRY&quot;</span>, <span class="st">&quot;SUCCESS&quot;</span>)</a>
+<a class="sourceLine" id="cb12-170" title="170">tSIMULSOL.out &lt;-<span class="st"> </span><span class="kw">t</span>(SIMULSOL.out)</a>
+<a class="sourceLine" id="cb12-171" title="171"><span class="kw">colnames</span>(tSIMULSOL.out) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;DORSAL&quot;</span>, <span class="st">&quot;VENTRAL&quot;</span>)</a>
+<a class="sourceLine" id="cb12-172" title="172"><span class="kw">kable</span>(tSIMULSOL.out)</a></code></pre></div>
 <table>
 <thead>
 <tr class="header">
@@ -1245,47 +1249,47 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </tr>
 <tr class="even">
 <td>TFA</td>
-<td align="right">40.2678261</td>
-<td align="right">31.1230177</td>
+<td align="right">39.8685652</td>
+<td align="right">31.0081465</td>
 </tr>
 <tr class="odd">
 <td>TSKIN</td>
-<td align="right">38.0907797</td>
-<td align="right">34.9899301</td>
+<td align="right">37.9519603</td>
+<td align="right">34.9371225</td>
 </tr>
 <tr class="even">
 <td>QCONV</td>
-<td align="right">77.1543619</td>
-<td align="right">42.1197196</td>
+<td align="right">76.8841311</td>
+<td align="right">42.3778612</td>
 </tr>
 <tr class="odd">
 <td>QCOND</td>
-<td align="right">0.5451574</td>
-<td align="right">0.4517003</td>
+<td align="right">1.7816783</td>
+<td align="right">1.4824179</td>
 </tr>
 <tr class="even">
 <td>QGENNET</td>
-<td align="right">-2.1521121</td>
-<td align="right">3.9658748</td>
+<td align="right">-1.8782209</td>
+<td align="right">4.0700645</td>
 </tr>
 <tr class="odd">
 <td>QSEVAP</td>
-<td align="right">0.1458038</td>
-<td align="right">0.1182727</td>
+<td align="right">0.1434575</td>
+<td align="right">0.1169764</td>
 </tr>
 <tr class="even">
 <td>QRAD</td>
-<td align="right">37.9417086</td>
-<td align="right">19.0513314</td>
+<td align="right">37.9687017</td>
+<td align="right">19.2990675</td>
 </tr>
 <tr class="odd">
 <td>QSLR</td>
-<td align="right">117.9379985</td>
-<td align="right">57.7741837</td>
+<td align="right">118.6524752</td>
+<td align="right">59.2031370</td>
 </tr>
 <tr class="even">
 <td>QRSKY</td>
-<td align="right">37.9417086</td>
+<td align="right">37.9687017</td>
 <td align="right">0.0000000</td>
 </tr>
 <tr class="odd">
@@ -1301,14 +1305,19 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <tr class="odd">
 <td>QRGRD</td>
 <td align="right">0.0000000</td>
-<td align="right">19.0513314</td>
+<td align="right">19.2990675</td>
 </tr>
 <tr class="even">
+<td>QFSEVAP</td>
+<td align="right">0.0000000</td>
+<td align="right">0.0000000</td>
+</tr>
+<tr class="odd">
 <td>NTRY</td>
 <td align="right">1.0000000</td>
 <td align="right">1.0000000</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>SUCCESS</td>
 <td align="right">1.0000000</td>
 <td align="right">1.0000000</td>
@@ -1373,11 +1382,11 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <tbody>
 <tr class="odd">
 <td>RESPFN</td>
-<td align="right">-0.0993808</td>
+<td align="right">-0.0994386</td>
 </tr>
 <tr class="even">
 <td>QRESP</td>
-<td align="right">0.8441810</td>
+<td align="right">0.8442388</td>
 </tr>
 <tr class="odd">
 <td>GEVAP</td>
@@ -1397,7 +1406,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </tr>
 <tr class="odd">
 <td>RESPGEN</td>
-<td align="right">1.6516816</td>
+<td align="right">1.8407220</td>
 </tr>
 <tr class="even">
 <td>O2STP</td>

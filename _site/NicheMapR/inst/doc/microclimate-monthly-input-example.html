@@ -12,7 +12,7 @@
 
 <meta name="author" content="Michael R. Kearney" />
 
-<meta name="date" content="2019-08-16" />
+<meta name="date" content="2019-10-08" />
 
 <title>Monthly example of inputs and outputs of the NicheMapR microclimate model</title>
 
@@ -303,7 +303,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">Monthly example of inputs and outputs of the NicheMapR microclimate model</h1>
 <h4 class="author">Michael R. Kearney</h4>
-<h4 class="date">2019-08-16</h4>
+<h4 class="date">2019-10-08</h4>
 
 
 
@@ -342,12 +342,14 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1">RUF &lt;-<span class="st"> </span><span class="fl">0.004</span> <span class="co"># Roughness height (m), , e.g. sand is 0.05, grass may be 2.0, current allowed range: 0.001 (snow) - 2.0 cm.</span></a>
 <a class="sourceLine" id="cb3-2" title="2">Refhyt &lt;-<span class="st"> </span><span class="dv">2</span> <span class="co"># Reference height (m), reference height at which air temperature, wind speed and relative humidity input data are measured</span></a>
 <a class="sourceLine" id="cb3-3" title="3">Usrhyt &lt;-<span class="st"> </span><span class="fl">0.01</span><span class="co"># local height (m) at which air temperature, relative humidity and wind speed calculatinos will be made</span></a>
-<a class="sourceLine" id="cb3-4" title="4"><span class="co"># Next four parameters are segmented velocity profiles due to bushes, rocks etc. on the surface</span></a>
-<a class="sourceLine" id="cb3-5" title="5"><span class="co">#IF NO EXPERIMENTAL WIND PROFILE DATA SET ALL THESE TO ZERO! (then roughness height is based on the parameter RUF)</span></a>
-<a class="sourceLine" id="cb3-6" title="6">Z01 &lt;-<span class="st"> </span><span class="dv">0</span> <span class="co"># Top (1st) segment roughness height(m)</span></a>
-<a class="sourceLine" id="cb3-7" title="7">Z02 &lt;-<span class="st"> </span><span class="dv">0</span> <span class="co"># 2nd segment roughness height(m)</span></a>
-<a class="sourceLine" id="cb3-8" title="8">ZH1 &lt;-<span class="st"> </span><span class="dv">0</span> <span class="co"># Top of (1st) segment, height above surface(m)</span></a>
-<a class="sourceLine" id="cb3-9" title="9">ZH2 &lt;-<span class="st"> </span><span class="dv">0</span> <span class="co"># 2nd segment, height above surface(m)</span></a></code></pre></div>
+<a class="sourceLine" id="cb3-4" title="4">ZH &lt;-<span class="st"> </span><span class="dv">0</span> <span class="co"># heat transfer roughness height (m) for Campbell and Norman air temperature/wind speed profile (invoked if greater than 1, 0.02 * canopy height in m if unknown)</span></a>
+<a class="sourceLine" id="cb3-5" title="5">D0 &lt;-<span class="st"> </span><span class="dv">0</span> <span class="co"># zero plane displacement correction factor (m) for Campbell and Norman air temperature/wind speed profile (0.6 * canopy height in m if unknown)</span></a>
+<a class="sourceLine" id="cb3-6" title="6"><span class="co"># Next four parameters are segmented velocity profiles due to bushes, rocks etc. on the surface</span></a>
+<a class="sourceLine" id="cb3-7" title="7"><span class="co">#IF NO EXPERIMENTAL WIND PROFILE DATA SET ALL THESE TO ZERO! (then roughness height is based on the parameter RUF)</span></a>
+<a class="sourceLine" id="cb3-8" title="8">Z01 &lt;-<span class="st"> </span><span class="dv">0</span> <span class="co"># Top (1st) segment roughness height(m)</span></a>
+<a class="sourceLine" id="cb3-9" title="9">Z02 &lt;-<span class="st"> </span><span class="dv">0</span> <span class="co"># 2nd segment roughness height(m)</span></a>
+<a class="sourceLine" id="cb3-10" title="10">ZH1 &lt;-<span class="st"> </span><span class="dv">0</span> <span class="co"># Top of (1st) segment, height above surface(m)</span></a>
+<a class="sourceLine" id="cb3-11" title="11">ZH2 &lt;-<span class="st"> </span><span class="dv">0</span> <span class="co"># 2nd segment, height above surface(m)</span></a></code></pre></div>
 </div>
 <div id="radiation-related-parameters" class="section level3">
 <h3>Radiation-related parameters</h3>
@@ -481,7 +483,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div id="collating-all-input-parameters" class="section level3">
 <h3>Collating all input parameters</h3>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" title="1"><span class="co"># input parameter vector</span></a>
-<a class="sourceLine" id="cb12-2" title="2">microinput&lt;-<span class="kw">c</span>(doynum, RUF, ERR, Usrhyt, Refhyt, Numtyps, Z01, Z02, ZH1, ZH2, idayst, ida, HEMIS, ALAT, AMINUT, ALONG, ALMINT, ALREF, slope, azmuth, ALTT, CMH2O, microdaily, tannul, EC, VIEWF, snowtemp, snowdens, snowmelt, undercatch, rainmult, runshade, runmoist, maxpool, evenrain, snowmodel, rainmelt, writecsv, densfun, hourly, rainhourly, lamb, IUV, RW, PC, RL, SP, R1, IM, MAXCOUNT, IR, message, fail, snowcond, intercept, grasshade, solonly)</a>
+<a class="sourceLine" id="cb12-2" title="2">microinput&lt;-<span class="kw">c</span>(doynum, RUF, ERR, Usrhyt, Refhyt, Numtyps, Z01, Z02, ZH1, ZH2, idayst, ida, HEMIS, ALAT, AMINUT, ALONG, ALMINT, ALREF, slope, azmuth, ALTT, CMH2O, microdaily, tannul, EC, VIEWF, snowtemp, snowdens, snowmelt, undercatch, rainmult, runshade, runmoist, maxpool, evenrain, snowmodel, rainmelt, writecsv, densfun, hourly, rainhourly, lamb, IUV, RW, PC, RL, SP, R1, IM, MAXCOUNT, IR, message, fail, snowcond, intercept, grasshade, solonly, ZH, D0)</a>
 <a class="sourceLine" id="cb12-3" title="3"></a>
 <a class="sourceLine" id="cb12-4" title="4"><span class="co"># Final input list - all these variables are expected by the input argument of the Fortran microclimate subroutine</span></a>
 <a class="sourceLine" id="cb12-5" title="5">micro&lt;-<span class="kw">list</span>(<span class="dt">microinput =</span> microinput, <span class="dt">tides =</span> tides, <span class="dt">doy =</span> doy, <span class="dt">SLES =</span> SLES, <span class="dt">DEP =</span> DEP, <span class="dt">Nodes =</span> Nodes, <span class="dt">MAXSHADES =</span> MAXSHADES, <span class="dt">MINSHADES =</span> MINSHADES, <span class="dt">TIMAXS =</span> TIMAXS, <span class="dt">TIMINS =</span> TIMINS, <span class="dt">TMAXX =</span> TMAXX, <span class="dt">TMINN =</span> TMINN, <span class="dt">RHMAXX =</span> RHMAXX, <span class="dt">RHMINN =</span> RHMINN, <span class="dt">CCMAXX =</span> CCMAXX, <span class="dt">CCMINN =</span> CCMINN, <span class="dt">WNMAXX =</span> WNMAXX, <span class="dt">WNMINN =</span> WNMINN, <span class="dt">TAIRhr =</span> TAIRhr, <span class="dt">RHhr =</span> RHhr, <span class="dt">WNhr =</span> WNhr, <span class="dt">CLDhr =</span> CLDhr, <span class="dt">SOLRhr =</span> SOLRhr, <span class="dt">RAINhr =</span> RAINhr, <span class="dt">ZENhr =</span> ZENhr, <span class="dt">REFLS =</span> REFLS, <span class="dt">PCTWET =</span> PCTWET, <span class="dt">soilinit =</span> soilinit, <span class="dt">hori =</span> hori, <span class="dt">TAI =</span> TAI, <span class="dt">soilprops =</span> soilprops, <span class="dt">moists =</span> moists, <span class="dt">RAINFALL =</span> RAINFALL, <span class="dt">tannulrun =</span> tannulrun, <span class="dt">PE =</span> PE, <span class="dt">KS =</span> KS, <span class="dt">BB =</span> BB, <span class="dt">BD =</span> BD, <span class="dt">DD =</span> DD, <span class="dt">L =</span> L, <span class="dt">LAI =</span> LAI)</a></code></pre></div>
